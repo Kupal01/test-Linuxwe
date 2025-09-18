@@ -12,17 +12,27 @@ jobs:
       - name: Update & Install Desktop + XRDP
         run: |
           sudo apt update
-          sudo apt install -y xfce4 xfce4-goodies xrdp
+          sudo apt install -y xfce4 xfce4-goodies xrdp dbus-x11
 
-          # Configure xrdp to use XFCE
+          # Configure XRDP to use XFCE
           echo "startxfce4" | sudo tee /etc/skel/.xsession
-          echo "startxfce4" | sudo tee /home/runner/.xsession
+          echo "startxfce4" | tee /home/runner/.xsession
+
+          # Configure session type for XRDP
+          echo "export XDG_SESSION_TYPE=x11" | sudo tee -a /etc/xrdp/startwm.sh
+          echo "export DESKTOP_SESSION=xfce" | sudo tee -a /etc/xrdp/startwm.sh
+          echo "exec startxfce4" | sudo tee -a /etc/xrdp/startwm.sh
+
+          # Ensure permissions
+          sudo chmod +x /etc/xrdp/startwm.sh
+
+          # Restart XRDP
           sudo systemctl enable xrdp
           sudo systemctl restart xrdp
 
       - name: Create RDP User with Secure Password
         run: |
-          USERNAME="rdpuser"
+          USERNAME="rdp"
 
           # Generate secure password
           PASS=$(tr -dc 'A-Za-z0-9!@#$%&*' </dev/urandom | head -c 16)
@@ -60,7 +70,7 @@ jobs:
           echo ""
           echo "=== RDP ACCESS ==="
           echo "Address: $TAILSCALE_IP"
-          echo "Username: rdpuser"
+          echo "Username: rdp"
           echo "Password: $(echo $RDP_CREDS)"
           echo "==================="
           echo ""
